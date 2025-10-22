@@ -1,0 +1,50 @@
+@startuml
+!include <C4/C4_Container>
+!include <C4/C4_Component>
+
+title Архитектура "NovaMarket"
+
+Person(user, "Пользователь", "Взаимодействует с платформой")
+
+System_Ext(sms_gateway, "Шлюз отправки SMS")
+System_Ext(payment_gateway, "Платёжная система")
+System_Ext(logistic_gateway, "Система логистической компании")
+
+System_Boundary(platform, "NovaMarket") {
+
+    Container(users_manager, "Управление пользователями", "", "Регистрация новых пользователей. Авторизация. Хранения персональных данных.")
+    Container(warehouse, "Управление складом", "", "Содержит полную информацию о доступных товарах и их характеристиках")
+    Container(billing, "Биллинг", "", "Проведение платежей")
+    Container(orders_manager, "Управление заказами", "", "Управляет корзинами пользователя. Содержит исчерпывающую информацию о заказах.")
+    Container(notifications, "Микросервис уведомлений", "", "Уведомление пользователей о статусах заказа. 2FA")
+
+    Container_Boundary(kafka, "Брокер сообщений") {
+        ContainerQueue(warehouse_topic, "Топик событий склада")
+        ContainerQueue(orders_topic, "Топик событий заказов")
+        ContainerQueue(billing_topic, "Топик событий биллинга")
+        ContainerQueue(users_topic, "Топик событий управления пользователями")
+    }
+
+    Rel(users_manager, users_topic, "Публикует")
+    Rel(notifications, users_topic, "Потребляет")
+
+    Rel(warehouse, warehouse_topic, "Публикует")
+    Rel(orders_manager, warehouse_topic, "Потребляет")
+
+    Rel(billing, billing_topic, "Публикует")
+    Rel(orders_manager, billing_topic, "Потребляет")
+    Rel(notifications, billing_topic, "Потребляет")
+    Rel(users_manager, billing_topic, "Потребляет")
+
+    Rel(orders_manager, orders_topic, "Публикует")
+    Rel(billing, orders_topic, "Потребляет")
+    Rel(notifications, orders_topic, "Потребляет")
+    Rel(users_manager, orders_topic, "Потребляет")
+}
+
+Rel(billing, payment_gateway, "Выполняет оплату через")
+Rel(notifications, sms_gateway, "Отправляет SMS через")
+Rel(orders_manager, logistic_gateway, "Рассчитывает стоимость доставки/выставляет накладные через")
+Rel(user, platform, "Взаимодействует с")
+
+@enduml

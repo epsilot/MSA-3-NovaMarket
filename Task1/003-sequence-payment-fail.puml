@@ -1,0 +1,26 @@
+@startuml
+skinparam actorStyle awesome
+
+title Диаграмма последовательности оформления заказа (Ошибка оплаты)
+
+actor Пользователь  as user
+
+box "NovaMarket"
+    participant "Управление складом" as warehouse
+    participant "Управление заказами" as orders_manager
+    participant "Биллинг" as billing
+end box
+
+participant "Платёжная система" as payment_gateway
+
+user -> orders_manager: Подтверждает оформление заказа
+orders_manager --> warehouse: OrderFormed
+warehouse --> orders_manager: ReservationSucceeded
+orders_manager --> billing: InvoiceFormed
+billing -> payment_gateway: Инициирует оплату
+payment_gateway -> billing: Ошибка оплаты
+billing --> orders_manager: PaymentFailed
+orders_manager --> warehouse: OrderCanceled
+warehouse -> warehouse: Отменяет резерв товаров
+
+@enduml

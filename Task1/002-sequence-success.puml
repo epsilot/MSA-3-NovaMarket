@@ -1,0 +1,33 @@
+@startuml
+skinparam actorStyle awesome
+
+title Диаграмма последовательности оформления заказа (Успешное оформление)
+
+actor Пользователь  as user
+
+box "NovaMarket"
+    participant "Управление складом" as warehouse
+    participant "Управление заказами" as orders_manager
+    participant "Биллинг" as billing
+    participant "Управление пользователями" as users_manager
+    participant "Микросервис уведомлений" as notifications
+end box
+
+participant "Платёжная система" as payment_gateway
+participant "Система логистической компании" as logistic_gateway
+
+user -> orders_manager: Подтверждает оформление заказа
+orders_manager --> warehouse: OrderFormed
+warehouse --> orders_manager: ReservationSucceeded
+orders_manager --> users_manager: ShippingAddressSaved
+orders_manager --> billing: InvoiceFormed
+billing -> payment_gateway: Инициирует оплату
+user -> payment_gateway: Выполняет оплату
+payment_gateway -> billing: Оплата выполнена успешно
+billing -> billing: Сохраняет данные банковской карты
+billing --> orders_manager: PaymentSucceeded
+billing --> notifications: PaymentSucceeded
+orders_manager -> logistic_gateway: Оформляет доставку
+logistic_gateway -> orders_manager: Доставка оформлена
+
+@enduml
