@@ -1,0 +1,69 @@
+@startuml
+!include <C4/C4_Container>
+
+title Архитектура "NovaMarket"
+
+Person(user, "Пользователь")
+
+System_Ext(sms_gateway, "Шлюз отправки SMS")
+System_Ext(payment_gateway, "Платёжная система")
+System_Ext(logistic_gateway, "Система логистической компании")
+
+Container(client_mobile, "Мобильный клиент")
+
+System_Boundary(platform, "NovaMarket") {
+
+    Container(client_mobile_api, "API Gateway. Мобильные клиенты")
+
+    Container(users_manager, "Управление пользователями", "", "Регистрация новых пользователей. Авторизация. Хранения персональных данных.")
+    Container(warehouse, "Управление складом", "", "Содержит полную информацию о доступных товарах и их характеристиках")
+    Container(billing, "Биллинг", "", "Проведение платежей")
+    Container(orders_manager, "Управление заказами", "", "Управляет корзинами пользователя. Содержит исчерпывающую информацию о заказах.")
+    Container(notifications, "Микросервис уведомлений", "", "Уведомление пользователей о статусах заказа. 2FA")
+
+    Container(orders_history, "История заказов", "", "Отображает информацию о предыдущих заказах пользователей", $tags="NEW")
+    AddElementTag("NEW", $bgColor="#C8E6C9", $borderColor="green", $fontColor="#000000")
+
+    Container_Boundary(kafka, "Брокер сообщений") {
+        ContainerQueue(warehouse_topic, "Топик событий склада")
+        ContainerQueue(orders_topic, "Топик событий заказов")
+        ContainerQueue(billing_topic, "Топик событий биллинга")
+        ContainerQueue(users_topic, "Топик событий управления пользователями")
+    }
+
+    Rel(users_manager, users_topic, "Публикует")
+    Rel(notifications, users_topic, "Потребляет")
+
+    Rel(warehouse, warehouse_topic, "Публикует")
+    Rel(orders_manager, warehouse_topic, "Потребляет")
+    Rel(orders_history, warehouse_topic, "Потребляет")
+
+    Rel(billing, billing_topic, "Публикует")
+    Rel(orders_manager, billing_topic, "Потребляет")
+    Rel(notifications, billing_topic, "Потребляет")
+    Rel(users_manager, billing_topic, "Потребляет")
+    Rel(orders_history, warehouse_topic, "Потребляет")
+
+    Rel(orders_manager, orders_topic, "Публикует")
+    Rel(billing, orders_topic, "Потребляет")
+    Rel(notifications, orders_topic, "Потребляет")
+    Rel(users_manager, orders_topic, "Потребляет")
+    Rel(orders_history, warehouse_topic, "Потребляет")
+
+
+    Rel(client_mobile_api, users_manager, "REST/JSON")
+    Rel(client_mobile_api, warehouse, "REST/JSON")
+    Rel(client_mobile_api, orders_manager, "REST/JSON")
+    Rel(client_mobile_api, billing, "REST/JSON")
+    Rel(client_mobile_api, notifications, "REST/JSON")
+    Rel(client_mobile_api, orders_history, "REST/JSON")
+}
+
+Rel(billing, payment_gateway, "Выполняет оплату через")
+Rel(notifications, sms_gateway, "Отправляет SMS через")
+Rel(orders_manager, logistic_gateway, "Рассчитывает стоимость доставки/выставляет накладные через")
+Rel(user, client_mobile, "Взаимодействует с")
+Rel(client_mobile, client_mobile_api, "REST/JSON")
+
+SHOW_LEGEND(false)
+@enduml
