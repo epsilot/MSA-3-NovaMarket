@@ -1,16 +1,19 @@
 @startuml
 !include <C4/C4_Container>
-!include <C4/C4_Component>
 
 title Архитектура "NovaMarket"
 
-Person(user, "Пользователь", "Взаимодействует с платформой")
+Person(user, "Пользователь")
 
 System_Ext(sms_gateway, "Шлюз отправки SMS")
 System_Ext(payment_gateway, "Платёжная система")
 System_Ext(logistic_gateway, "Система логистической компании")
 
+Container(client_mobile, "Мобильный клиент")
+
 System_Boundary(platform, "NovaMarket") {
+
+    Container(client_mobile_api, "API Gateway. Мобильные клиенты")
 
     Container(users_manager, "Управление пользователями", "", "Регистрация новых пользователей. Авторизация. Хранения персональных данных.")
     Container(warehouse, "Управление складом", "", "Содержит полную информацию о доступных товарах и их характеристиках")
@@ -40,11 +43,19 @@ System_Boundary(platform, "NovaMarket") {
     Rel(billing, orders_topic, "Потребляет")
     Rel(notifications, orders_topic, "Потребляет")
     Rel(users_manager, orders_topic, "Потребляет")
+
+    Rel(client_mobile_api, users_manager, "REST/JSON")
+    Rel(client_mobile_api, warehouse, "REST/JSON")
+    Rel(client_mobile_api, orders_manager, "REST/JSON")
+    Rel(client_mobile_api, billing, "REST/JSON")
+    Rel(client_mobile_api, notifications, "REST/JSON")
 }
 
 Rel(billing, payment_gateway, "Выполняет оплату через")
 Rel(notifications, sms_gateway, "Отправляет SMS через")
 Rel(orders_manager, logistic_gateway, "Рассчитывает стоимость доставки/выставляет накладные через")
-Rel(user, platform, "Взаимодействует с")
+Rel(user, client_mobile, "Взаимодействует с")
+Rel(client_mobile, client_mobile_api, "REST/JSON")
 
+SHOW_LEGEND(false)
 @enduml
